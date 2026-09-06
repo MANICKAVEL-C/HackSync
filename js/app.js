@@ -111,6 +111,15 @@ const app = {
     this.renderMatches();
   },
 
+  setFilterScope(scope) {
+    this.filterScope = scope;
+    const btnAll = document.getElementById('btn-scope-all');
+    const btnTop15 = document.getElementById('btn-scope-top15');
+    if (btnAll) btnAll.className = scope === 'all' ? 'px-3.5 py-1.5 rounded-xl text-xs font-black bg-ocean-600 text-white shadow-md transition-all' : 'px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:text-slate-900 transition-all';
+    if (btnTop15) btnTop15.className = scope === 'top15' ? 'px-3.5 py-1.5 rounded-xl text-xs font-black bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md transition-all' : 'px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:text-slate-900 transition-all';
+    this.renderMatches();
+  },
+
   setGroupingMode(mode) {
     this.groupingMode = mode;
     ['urgency', 'domain', 'flat'].forEach(m => {
@@ -173,6 +182,10 @@ const app = {
       }
       return b.mlResult.score - a.mlResult.score;
     });
+
+    if (this.filterScope === 'top15') {
+      processed = processed.slice(0, 15);
+    }
 
     if (processed.length === 0) {
       container.innerHTML = '';

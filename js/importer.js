@@ -14,10 +14,26 @@ const ImporterModule = {
     const junkKeywords = [
       'codeforces round', 'rating change', 'password reset', 'security alert',
       'verify your email', 'account confirmation', 'subscription renewed',
-      'unsubscribed', 'receipt', 'invoice', 'newsletter issue #'
+      'unsubscribed', 'receipt', 'invoice', 'newsletter issue #',
+      'fee payment', 'exam timetable', 'hall ticket', 'attendance shortage',
+      'hostel circular', 'holiday notice', 'bus timing', 'semester exam',
+      'revaluation', 'tuition fee', 'grace marks', 'academic calendar',
+      'working day', 'leave approval', 'condonation fee', 'library fine'
     ];
 
-    return junkKeywords.some(kw => lower.includes(kw));
+    if (junkKeywords.some(kw => lower.includes(kw))) {
+      return true;
+    }
+
+    const competitionKeywords = [
+      'hackathon', 'symposium', 'competition', 'contest', 'challenge',
+      'techfest', 'paper presentation', 'project expo', 'coding', 'unstop',
+      'devpost', 'circuit debugging', 'hardware hack', 'ideathon', 'hackfest',
+      'prize', 'cash reward', 'robotics', 'quiz', 'event'
+    ];
+
+    const hasCompetitionKeyword = competitionKeywords.some(kw => lower.includes(kw));
+    return !hasCompetitionKeyword;
   },
 
   /**
