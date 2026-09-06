@@ -3,12 +3,7 @@
  * Run using Node.js: node tests/test_ml.js
  */
 
-const fs = require('fs');
-const path = require('path');
-
-// Load dependent modules in Node environment
-const mlPredictorCode = fs.readFileSync(path.join(__dirname, '../js/mlPredictor.js'), 'utf8');
-eval(mlPredictorCode);
+const MLPredictor = require('../js/mlPredictor.js');
 
 let testsPassed = 0;
 let testsFailed = 0;

@@ -131,7 +131,7 @@ const MLPredictor = {
       }
     } else {
       // Parse deadline on the fly if deadlineInfo not pre-attached
-      const dInfo = window.MatcherModule ? MatcherModule.getDeadlineInfo(hackathon.deadline) : { expired: false, diffDays: 5 };
+      const dInfo = (typeof window !== 'undefined' && window.MatcherModule) ? window.MatcherModule.getDeadlineInfo(hackathon.deadline) : { expired: false, diffDays: 5 };
       urgencyScore = dInfo.expired ? 0 : Math.max(20, 100 - (dInfo.diffDays * 5));
     }
 
@@ -160,3 +160,10 @@ const MLPredictor = {
     };
   }
 };
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = MLPredictor;
+}
+if (typeof window !== 'undefined') {
+  window.MLPredictor = MLPredictor;
+}
