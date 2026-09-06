@@ -57,19 +57,39 @@ const MLPredictor = {
     return tf;
   },
 
-  // Retrieve user online learning feedback weights from localStorage
+  _memoryStorage: {},
+
+  _getStorage() {
+    if (typeof localStorage !== 'undefined') {
+      return localStorage;
+    }
+    const self = this;
+    return {
+      getItem(key) {
+        return self._memoryStorage[key] || null;
+      },
+      setItem(key, val) {
+        self._memoryStorage[key] = String(val);
+      },
+      removeItem(key) {
+        delete self._memoryStorage[key];
+      }
+    };
+  },
+
+  // Retrieve user online learning feedback weights
   getFeedbackWeights() {
-    if (typeof localStorage === 'undefined') return {};
-    const data = localStorage.getItem('hacksync_learning_weights');
+    const storage = this._getStorage();
+    const data = storage.getItem('hacksync_learning_weights');
     if (!data) return {};
     try { return JSON.parse(data); } catch (e) { return {}; }
   },
 
   // Record user action (applied, bookmarked, skipped) to adapt ML weights online
   recordFeedback(hackathon, action) {
-    if (typeof localStorage === 'undefined' || !hackathon) return;
+    if (!hackathon) return;
     const weights = this.getFeedbackWeights();
-    const tokens = this.tokenize(hackathon.title + ' ' + (hackathon.skills || []).join(' '));
+    const tokens = this.tokenize((hackathon.title || '') + ' ' + (hackathon.skills || []).join(' ') + ' ' + (hackathon.description || ''));
     
     // Action weight deltas: 'applied' (+1.5), 'bookmarked' (+1.0), 'skipped' (-0.5)
     const delta = action === 'applied' ? 1.5 : (action === 'bookmarked' ? 1.0 : -0.5);
@@ -78,7 +98,8 @@ const MLPredictor = {
       weights[token] = Math.max(-2, Math.min(5, (weights[token] || 0) + delta));
     });
 
-    localStorage.setItem('hacksync_learning_weights', JSON.stringify(weights));
+    const storage = this._getStorage();
+    storage.setItem('hacksync_learning_weights', JSON.stringify(weights));
   },
 
   // Predict ML Match Score and Generate Feature Insights

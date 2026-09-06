@@ -91,7 +91,7 @@ const MatcherModule = {
     const link = (hackathon.link || '').trim();
     let hostname = '';
 
-    if (link && link.startsWith('http')) {
+    if (link && (link.startsWith('http://') || link.startsWith('https://'))) {
       try {
         hostname = new URL(link).hostname.toLowerCase();
       } catch (e) {
@@ -99,10 +99,20 @@ const MatcherModule = {
       }
     }
 
-    // Strict Hostname TLD & Apex Domain Regex
     const trustedHostRegex = /(^|\.)(citchennai\.net|citchennai\.edu\.in|sih\.gov\.in|isro\.gov\.in|drdo\.gov\.in|shaastra\.org|ieee\.org|ti\.com|unstop\.com|devpost\.com|hackerearth\.com)$/i;
     const trustedTLDRegex = /\.(edu|ac\.in|gov\.in)$/i;
 
+    // 1. Phishing / untrusted domain check: If link points to suspicious host, flag High Risk immediately
+    if (hostname && (hostname.endsWith('.ru') || hostname.endsWith('.phish') || hostname.includes('evil') || hostname.includes('scam'))) {
+      return {
+        status: 'suspicious',
+        badge: '🚨 High Risk (Untrusted Domain)',
+        trustScore: 20,
+        colorClass: 'bg-rose-50 text-rose-700 border-rose-200'
+      };
+    }
+
+    // 2. Strict Hostname match: Verified Official if URL matches trusted host/TLD
     if (hostname && (trustedHostRegex.test(hostname) || trustedTLDRegex.test(hostname))) {
       return {
         status: 'verified',
@@ -112,23 +122,33 @@ const MatcherModule = {
       };
     }
 
+    // 3. Link shortener or generic external link check: Prevent auto-verifying untrusted links via naive platform label
+    if (hostname) {
+      const isShortener = /(bit\.ly|tinyurl\.com|goo\.gl|t\.co|is\.gd|buff\.ly|ow\.ly)/i.test(hostname);
+      if (isShortener) {
+        return {
+          status: 'unverified',
+          badge: '⚠️ Unverified (Shortened Link)',
+          trustScore: 50,
+          colorClass: 'bg-amber-50 text-amber-700 border-amber-200'
+        };
+      }
+      return {
+        status: 'standard',
+        badge: '✓ Standard External Link',
+        trustScore: 75,
+        colorClass: 'bg-slate-100 text-slate-700 border-slate-200'
+      };
+    }
+
+    // 4. Fallback for internal listings without external URL
     const platform = (hackathon.platform || '').toLowerCase();
-    if (platform.includes('gmail oauth') || platform.includes('cit chennai') || platform.includes('unstop') || platform.includes('devpost') || platform.includes('government')) {
+    if (platform.includes('gmail oauth') || platform.includes('cit chennai') || platform.includes('government')) {
       return {
         status: 'verified',
         badge: '🛡️ Verified Official',
         trustScore: 95,
         colorClass: 'bg-emerald-50 text-emerald-700 border-emerald-200'
-      };
-    }
-
-    // Flag suspicious non-institutional domains or phishing links
-    if (hostname && (hostname.endsWith('.ru') || hostname.endsWith('.phish') || hostname.includes('evil'))) {
-      return {
-        status: 'suspicious',
-        badge: '🚨 High Risk (Untrusted Domain)',
-        trustScore: 20,
-        colorClass: 'bg-rose-50 text-rose-700 border-rose-200'
       };
     }
 

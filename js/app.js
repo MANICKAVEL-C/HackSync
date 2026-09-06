@@ -313,12 +313,19 @@ const app = {
     const mlScore = h.mlResult.score;
     const matchBadgeClass = mlScore >= 80 ? 'bg-emerald-500 text-white shadow-emerald-500/20' : (mlScore >= 65 ? 'bg-ocean-600 text-white' : 'bg-slate-700 text-white');
 
+    const safeTitle = this.escapeHTML(h.title);
+    const safePlatform = this.escapeHTML(h.platform);
+    const safeDesc = this.escapeHTML(h.description || 'College competition');
+    const safePrize = this.escapeHTML(h.prize || 'Prizes');
+    const safeLink = this.escapeHTML(h.link);
+    const safeId = this.escapeHTML(h.id);
+
     return `
       <div class="hackathon-card bg-white border border-slate-200 rounded-2xl p-5 flex flex-col justify-between space-y-4 shadow-sm hover:shadow-md transition-all">
         <div class="space-y-3">
           <div class="flex items-center justify-between gap-2">
             <span class="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border bg-ocean-50 text-ocean-700 border-ocean-200 line-clamp-1">
-              ${h.platform}
+              ${safePlatform}
             </span>
             <span class="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border ${h.deadlineInfo.urgencyBadge} shrink-0">
               ${h.deadlineInfo.displayText}
@@ -326,16 +333,16 @@ const app = {
           </div>
 
           <div>
-            <h3 onclick="app.openDetailModal('${h.id}')" class="text-base font-extrabold text-slate-900 line-clamp-1 hover:text-ocean-600 cursor-pointer transition-colors">
-              ${h.title}
+            <h3 onclick="app.openDetailModal('${safeId}')" class="text-base font-extrabold text-slate-900 line-clamp-1 hover:text-ocean-600 cursor-pointer transition-colors">
+              ${safeTitle}
             </h3>
-            <p class="text-xs text-slate-500 line-clamp-2 mt-1">${h.description || 'College competition'}</p>
+            <p class="text-xs text-slate-500 line-clamp-2 mt-1">${safeDesc}</p>
           </div>
 
           <div class="flex flex-wrap gap-1.5 pt-1">
             ${(h.skills || []).slice(0, 4).map(s => `
               <span class="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
-                ${s}
+                ${this.escapeHTML(s)}
               </span>
             `).join('')}
           </div>
@@ -343,23 +350,23 @@ const app = {
 
         <div class="space-y-3 pt-3 border-t border-slate-100">
           <div class="flex items-center justify-between">
-            <span onclick="app.openDetailModal('${h.id}')" class="text-xs font-black px-2.5 py-1 rounded-xl ${matchBadgeClass} flex items-center gap-1 shadow-sm cursor-pointer hover:scale-105 transition-transform">
+            <span onclick="app.openDetailModal('${safeId}')" class="text-xs font-black px-2.5 py-1 rounded-xl ${matchBadgeClass} flex items-center gap-1 shadow-sm cursor-pointer hover:scale-105 transition-transform">
               <i data-lucide="brain-circuit" class="w-3.5 h-3.5"></i>
               ${mlScore}% ML Match
             </span>
             <span class="text-xs font-extrabold text-sun-600 flex items-center gap-1 line-clamp-1">
               <i data-lucide="trophy" class="w-3.5 h-3.5 shrink-0"></i>
-              ${h.prize || 'Prizes'}
+              ${safePrize}
             </span>
           </div>
 
           <div class="flex items-center gap-2">
-            <a href="${h.link}" target="_blank" class="flex-1 py-2 rounded-xl bg-ocean-600 hover:bg-ocean-700 text-white text-xs font-extrabold text-center transition-all flex items-center justify-center gap-1.5 shadow-sm">
+            <a href="${safeLink}" target="_blank" onclick="app.handleActionClick('${safeId}', 'applied')" class="flex-1 py-2 rounded-xl bg-ocean-600 hover:bg-ocean-700 text-white text-xs font-extrabold text-center transition-all flex items-center justify-center gap-1.5 shadow-sm">
               <span>Apply</span>
               <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
             </a>
 
-            <select onchange="app.handleStatusChange('${h.id}', this.value)" class="bg-slate-50 border border-slate-200 text-xs text-slate-700 rounded-xl px-2.5 py-2 font-bold focus:outline-none focus:border-ocean-500">
+            <select onchange="app.handleStatusChange('${safeId}', this.value)" class="bg-slate-50 border border-slate-200 text-xs text-slate-700 rounded-xl px-2.5 py-2 font-bold focus:outline-none focus:border-ocean-500">
               <option value="none" ${h.status === 'none' ? 'selected' : ''}>+ Track</option>
               <option value="bookmarked" ${h.status === 'bookmarked' ? 'selected' : ''}>📌 Bookmarked</option>
               <option value="registered" ${h.status === 'registered' ? 'selected' : ''}>✅ Registered</option>
@@ -448,15 +455,20 @@ const app = {
 
     if (matrixCount) matrixCount.innerText = `${skills.length} Derived Skills`;
 
-    container.innerHTML = skills.map(s => `
-      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-ocean-50 border border-ocean-200 text-xs font-bold text-slate-800 shadow-sm">
-        <span>${s.name}</span>
-        <span class="text-[10px] px-1.5 py-0.2 rounded bg-ocean-600 text-white font-bold">${s.level}</span>
-        <button onclick="app.handleRemoveSkill('${s.id}')" class="text-slate-400 hover:text-rose-600 ml-1">
-          <i data-lucide="x" class="w-3 h-3"></i>
-        </button>
-      </span>
-    `).join('');
+    container.innerHTML = skills.map(s => {
+      const safeName = this.escapeHTML(s.name);
+      const safeLevel = this.escapeHTML(s.level);
+      const safeId = this.escapeHTML(s.id);
+      return `
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-ocean-50 border border-ocean-200 text-xs font-bold text-slate-800 shadow-sm">
+          <span>${safeName}</span>
+          <span class="text-[10px] px-1.5 py-0.2 rounded bg-ocean-600 text-white font-bold">${safeLevel}</span>
+          <button onclick="app.handleRemoveSkill('${safeId}')" class="text-slate-400 hover:text-rose-600 ml-1">
+            <i data-lucide="x" class="w-3 h-3"></i>
+          </button>
+        </span>
+      `;
+    }).join('');
 
     document.getElementById('badge-skills-count').innerText = skills.length;
     if (window.lucide) lucide.createIcons();
@@ -491,21 +503,28 @@ const app = {
       return;
     }
 
-    container.innerHTML = projects.map(p => `
-      <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2 relative group shadow-sm hover:border-ocean-300 transition-all">
-        <button onclick="app.handleRemoveProject('${p.id}')" class="absolute top-3 right-3 text-slate-400 hover:text-rose-600 p-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <i data-lucide="trash-2" class="w-4 h-4"></i>
-        </button>
-        <h4 class="text-sm font-bold text-slate-900 pr-6 flex items-center gap-1.5">
-          ${p.title}
-          ${p.link ? `<a href="${p.link}" target="_blank" class="text-ocean-600 hover:underline text-xs"><i data-lucide="external-link" class="w-3 h-3 inline"></i></a>` : ''}
-        </h4>
-        <p class="text-xs text-slate-600 line-clamp-2">${p.desc}</p>
-        <div class="flex flex-wrap gap-1 pt-1">
-          ${p.tech.map(t => `<span class="text-[10px] font-bold px-2 py-0.5 rounded bg-white text-slate-700 border border-slate-200">${t}</span>`).join('')}
+    container.innerHTML = projects.map(p => {
+      const safeTitle = this.escapeHTML(p.title);
+      const safeDesc = this.escapeHTML(p.desc);
+      const safeLink = this.escapeHTML(p.link);
+      const safeId = this.escapeHTML(p.id);
+
+      return `
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2 relative group shadow-sm hover:border-ocean-300 transition-all">
+          <button onclick="app.handleRemoveProject('${safeId}')" class="absolute top-3 right-3 text-slate-400 hover:text-rose-600 p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <i data-lucide="trash-2" class="w-4 h-4"></i>
+          </button>
+          <h4 class="text-sm font-bold text-slate-900 pr-6 flex items-center gap-1.5">
+            ${safeTitle}
+            ${safeLink ? `<a href="${safeLink}" target="_blank" class="text-ocean-600 hover:underline text-xs"><i data-lucide="external-link" class="w-3 h-3 inline"></i></a>` : ''}
+          </h4>
+          <p class="text-xs text-slate-600 line-clamp-2">${safeDesc}</p>
+          <div class="flex flex-wrap gap-1 pt-1">
+            ${(p.tech || []).map(t => `<span class="text-[10px] font-bold px-2 py-0.5 rounded bg-white text-slate-700 border border-slate-200">${this.escapeHTML(t)}</span>`).join('')}
+          </div>
         </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
 
     if (window.lucide) lucide.createIcons();
   },
@@ -593,18 +612,23 @@ const app = {
       const key = t.status === 'in_progress' ? 'in_progress' : t.status;
       if (cols[key]) {
         counts[key]++;
+        const safeTitle = this.escapeHTML(t.title);
+        const safePlatform = this.escapeHTML(t.platform);
+        const safeLink = this.escapeHTML(t.link);
+        const safeId = this.escapeHTML(t.id);
+
         cols[key].innerHTML += `
           <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2 text-xs shadow-sm">
             <div class="flex items-center justify-between">
-              <span class="font-extrabold text-slate-800 line-clamp-1">${t.title}</span>
+              <span class="font-extrabold text-slate-800 line-clamp-1">${safeTitle}</span>
             </div>
-            <p class="text-[11px] text-slate-500">Platform: ${t.platform}</p>
+            <p class="text-[11px] text-slate-500">Platform: ${safePlatform}</p>
             <div class="flex items-center justify-between pt-1 border-t border-slate-200">
-              <a href="${t.link}" target="_blank" class="text-ocean-600 hover:underline text-[11px] flex items-center gap-1 font-bold">
+              <a href="${safeLink}" target="_blank" class="text-ocean-600 hover:underline text-[11px] flex items-center gap-1 font-bold">
                 <span>View</span>
                 <i data-lucide="external-link" class="w-3 h-3"></i>
               </a>
-              <select onchange="app.handleStatusChange('${t.id}', this.value)" class="bg-white border border-slate-200 text-[10px] text-slate-700 font-semibold rounded px-1.5 py-1">
+              <select onchange="app.handleStatusChange('${safeId}', this.value)" class="bg-white border border-slate-200 text-[10px] text-slate-700 font-semibold rounded px-1.5 py-1">
                 <option value="bookmarked" ${t.status === 'bookmarked' ? 'selected' : ''}>Bookmarked</option>
                 <option value="registered" ${t.status === 'registered' ? 'selected' : ''}>Registered</option>
                 <option value="in_progress" ${t.status === 'in_progress' ? 'selected' : ''}>In Progress</option>
