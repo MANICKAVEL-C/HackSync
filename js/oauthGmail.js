@@ -1,10 +1,10 @@
 /**
  * Google OAuth 2.0 Secure Gmail Integration Engine
  * Uses Google Identity Services (GIS) & Gmail REST API v1 for secure read-only inbox scanning.
+ * Tokens are stored strictly in-memory / sessionStorage to mitigate XSS risk.
  */
 
 const GoogleOAuthModule = {
-  // Official Gmail Read-Only OAuth 2.0 Scope
   SCOPE: 'https://www.googleapis.com/auth/gmail.readonly',
   tokenClient: null,
   accessToken: null,
@@ -18,17 +18,17 @@ const GoogleOAuthModule = {
         callback: async (tokenResponse) => {
           if (tokenResponse.error) {
             console.error('Google OAuth 2.0 error:', tokenResponse.error);
-            alert('Google OAuth 2.0 Connection failed: ' + tokenResponse.error);
+            alert('Google OAuth 2.0 Authorization failed: ' + tokenResponse.error);
             return;
           }
           this.accessToken = tokenResponse.access_token;
-          localStorage.setItem('hacksync_oauth_token', this.accessToken);
+          sessionStorage.setItem('hacksync_oauth_token', this.accessToken);
           alert('🔒 Google OAuth 2.0 Connection Successful! Access token obtained securely.');
           const fetched = await this.fetchGmailMessagesViaREST();
           if (fetched && fetched.length > 0) {
             app.processFetchedHackathons(fetched);
           } else {
-            alert('Connected to Gmail successfully! Scanning inbox for hackathon keywords...');
+            alert('Connected to Gmail successfully! Inbox scanned.');
             app.renderMatches();
           }
         }
@@ -90,7 +90,7 @@ const GoogleOAuthModule = {
     if (this.tokenClient) {
       this.tokenClient.requestAccessToken({ prompt: 'consent' });
     } else {
-      this.triggerSecureOAuthFlow();
+      alert('Unable to load Google OAuth 2.0 authorization client. Please ensure you are connected to the internet and refresh the page.');
     }
   },
 
@@ -99,7 +99,7 @@ const GoogleOAuthModule = {
    */
   async fetchGmailMessagesViaREST(token = this.accessToken) {
     if (!token) {
-      token = localStorage.getItem('hacksync_oauth_token');
+      token = sessionStorage.getItem('hacksync_oauth_token');
     }
 
     if (!token) {
@@ -120,7 +120,7 @@ const GoogleOAuthModule = {
 
     if (!res.ok) {
       if (res.status === 401) {
-        localStorage.removeItem('hacksync_oauth_token');
+        sessionStorage.removeItem('hacksync_oauth_token');
         throw new Error('OAuth 2.0 Access Token expired. Please re-authenticate with Google.');
       }
       throw new Error(`Gmail REST API error (${res.status}): ${res.statusText}`);
@@ -160,24 +160,6 @@ const GoogleOAuthModule = {
     }
 
     return fetchedHackathons;
-  },
-
-  /**
-   * OAuth 2.0 Token Simulator for local verification
-   */
-  async triggerSecureOAuthFlow() {
-    const userEmail = prompt("🔒 GOOGLE OAUTH 2.0 SECURE ACCOUNT LINK\n\nEnter your college Google account (@citchennai.net) to request secure OAuth 2.0 permission:", "manickavelc.ece2025@citchennai.net");
-    if (!userEmail) return;
-
-    // Generate secure local OAuth 2.0 session token
-    const mockToken = "ya29.oauth2_secure_token_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
-    this.accessToken = mockToken;
-    localStorage.setItem('hacksync_oauth_token', mockToken);
-    localStorage.setItem('hacksync_oauth_email', userEmail);
-
-    alert(`🔒 GOOGLE OAUTH 2.0 LINK SUCCESSFUL!\n\nConnected Account: ${userEmail}\nSecurity Scope: https://www.googleapis.com/auth/gmail.readonly\nEncryption: 256-Bit OAuth 2.0 Token (Zero Passwords Stored)\n\nClick OK to fetch all 30-50+ college hackathon emails via Google REST API!`);
-
-    await app.triggerEmailSync(false);
   }
 };
 
