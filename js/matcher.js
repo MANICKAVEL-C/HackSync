@@ -1,6 +1,5 @@
 /**
- * Matcher & Scoring Engine
- * Computes skill match %, registration deadline urgency, and composite ranking score.
+ * Matcher & Scoring Engine — Skill Overlap, Deadline Urgency & Authenticity Shield
  */
 
 const MatcherModule = {
@@ -87,14 +86,49 @@ const MatcherModule = {
     return Math.round((matchScore * 0.60) + (urgencyScore * 0.40));
   },
 
+  // Scam & Circular Authenticity Shield
+  verifyAuthenticity(hackathon) {
+    if (!hackathon) return { status: 'verified', badge: '🛡️ Verified Official', trustScore: 95, colorClass: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+    const platform = (hackathon.platform || '').toLowerCase();
+    const link = (hackathon.link || '').toLowerCase();
+    const desc = (hackathon.description || '').toLowerCase();
+
+    // Trusted institutional domains & platforms
+    const trustedDomains = ['citchennai.net', 'citchennai.edu.in', 'gov.in', 'edu', 'ac.in', 'unstop.com', 'devpost.com', 'ieee.org', 'shaastra.org', 'isro.gov.in', 'ti.com', 'drdo.gov.in'];
+    const isTrustedDomain = trustedDomains.some(d => platform.includes(d) || link.includes(d) || desc.includes(d));
+
+    if (isTrustedDomain || platform.includes('government') || platform.includes('college') || platform.includes('unstop') || platform.includes('devpost')) {
+      return {
+        status: 'verified',
+        badge: '🛡️ Verified Official',
+        trustScore: 98,
+        colorClass: 'bg-emerald-50 text-emerald-700 border-emerald-200'
+      };
+    }
+
+    // Flag unverified free email accounts or suspicious registration links
+    if (link.includes('forms.gle') || desc.includes('@gmail.com') || desc.includes('@yahoo.com')) {
+      return {
+        status: 'unverified',
+        badge: '⚠️ Unverified (Verify Source)',
+        trustScore: 60,
+        colorClass: 'bg-amber-50 text-amber-700 border-amber-200'
+      };
+    }
+
+    return {
+      status: 'standard',
+      badge: '✓ Standard Listing',
+      trustScore: 85,
+      colorClass: 'bg-slate-100 text-slate-700 border-slate-200'
+    };
+  },
+
   // Eligibility Verification Check
   isEligible(hackathon, userProfile) {
-    // Guarantees all imported/listed hackathons are checked
-    // By default, college & Unstop hackathons targeted at B.Tech/Engineering students are eligible
     if (!hackathon.eligibility) return true;
     const lower = hackathon.eligibility.toLowerCase();
     
-    // Unless explicitly restricted to corporate or specific non-engineering degrees, user is eligible
     if (lower.includes('working professionals only') || lower.includes('school students only')) {
       return false;
     }

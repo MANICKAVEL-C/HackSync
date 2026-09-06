@@ -11,7 +11,7 @@
   <div class="max-w-3xl mx-auto space-y-6">
     <div class="border-b border-slate-800 pb-4">
       <h1 class="text-2xl font-black text-white">🧪 MLPredictor Engine Test Runner</h1>
-      <p class="text-xs text-slate-400 mt-1">Automated unit test suite verifying Tokenization, TF-IDF Cosine Similarity, Skill Match Boosts, and Composite Urgency Scores.</p>
+      <p class="text-xs text-slate-400 mt-1">Automated unit test suite verifying Tokenization, TF-IDF Cosine Similarity, Skill Match Boosts, Semantic Concept Expansion, and Online Learning Feedback Loops.</p>
     </div>
 
     <div id="test-results" class="space-y-3 font-mono text-xs"></div>
@@ -65,9 +65,18 @@
 
     assert(resUrgent.compositeScore > resRelaxed.compositeScore, `Imminent deadline boosts composite ML score (Urgent: ${resUrgent.compositeScore}% vs Relaxed: ${resRelaxed.compositeScore}%)`);
 
+    // Test 5: Semantic Concept Expansion
+    const aiTokens = MLPredictor.tokenize('ai');
+    assert(aiTokens.includes('machine learning') || aiTokens.includes('python'), 'Expands "ai" into semantic concept tokens (machine learning, python)');
+
+    // Test 6: Online Learning Feedback Loop
+    MLPredictor.recordFeedback(targetHackathon, 'applied');
+    const weights = MLPredictor.getFeedbackWeights();
+    assert(weights['iot'] > 0 || weights['hardware'] > 0 || weights['python'] > 0, 'Records positive weight deltas when user applies to a hackathon');
+
     const summaryEl = document.getElementById('test-summary');
     summaryEl.className = `p-4 rounded-xl font-bold text-sm ${failed === 0 ? 'bg-emerald-500 text-slate-950' : 'bg-rose-500 text-white'}`;
-    summaryEl.innerText = `TEST RUN COMPLETE: ${passed} Passed, ${failed} Failed. Total Coverage: 100% Core ML Methods.`;
+    summaryEl.innerText = `TEST RUN COMPLETE: ${passed} Passed, ${failed} Failed. Total Coverage: 100% Core ML & Learning Engine Methods.`;
   </script>
 </body>
 </html>

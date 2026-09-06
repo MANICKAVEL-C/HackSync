@@ -120,6 +120,14 @@ const app = {
     this.renderMatches();
   },
 
+  handleActionClick(id, action = 'applied') {
+    const target = this.hackathons.find(h => h.id === id);
+    if (target && window.MLPredictor) {
+      MLPredictor.recordFeedback(target, action);
+      this.renderMatches();
+    }
+  },
+
   setGroupingMode(mode) {
     this.groupingMode = mode;
     ['urgency', 'domain', 'flat'].forEach(m => {
@@ -229,7 +237,8 @@ const app = {
               ${items.map(h => {
                 const mlScore = h.mlResult.score;
                 const matchBadge = mlScore >= 80 ? 'bg-emerald-600 text-white font-black' : (mlScore >= 65 ? 'bg-ocean-600 text-white font-black' : 'bg-slate-700 text-white font-bold');
-                
+                const auth = MatcherModule.verifyAuthenticity ? MatcherModule.verifyAuthenticity(h) : { badge: 'Verified', colorClass: 'bg-slate-100 text-slate-700 border-slate-200' };
+
                 return `
                   <tr class="hover:bg-slate-50/80 transition-colors">
                     <td class="p-3.5">
@@ -248,6 +257,11 @@ const app = {
                       <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 border border-slate-200 text-slate-700 inline-block line-clamp-1">
                         ${h.platform}
                       </span>
+                      <div class="mt-1">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold border ${auth.colorClass}">
+                          ${auth.badge}
+                        </span>
+                      </div>
                     </td>
                     <td class="p-3.5">
                       <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${h.deadlineInfo.urgencyBadge}">
@@ -265,7 +279,7 @@ const app = {
                       ${h.prize || 'Rewards'}
                     </td>
                     <td class="p-3.5 text-right space-x-1">
-                      <a href="${h.link}" target="_blank" class="px-3 py-1 rounded-lg bg-ocean-600 hover:bg-ocean-700 text-white font-bold text-xs inline-flex items-center gap-1">
+                      <a href="${h.link}" target="_blank" onclick="app.handleActionClick('${h.id}', 'applied')" class="px-3 py-1 rounded-lg bg-ocean-600 hover:bg-ocean-700 text-white font-bold text-xs inline-flex items-center gap-1">
                         Apply <i data-lucide="external-link" class="w-3 h-3"></i>
                       </a>
                     </td>

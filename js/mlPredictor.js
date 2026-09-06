@@ -1,11 +1,21 @@
 /**
- * Machine Learning Predictor Engine — TF-IDF Vectorization & Cosine Similarity
+ * Machine Learning Predictor Engine — TF-IDF Vectorization, Cosine Similarity & Online Learning Feedback Loop
  * Predicts personalized suitability scores and provides AI feature explanations.
  */
 
 const MLPredictor = {
 
-  // Tokenize & normalize text into clean terms (filtering stopwords)
+  // Semantic Concept Dictionary mapping related domain terms
+  conceptSynonyms: {
+    'ai': ['machine learning', 'artificial intelligence', 'deep learning', 'neural', 'llm', 'gpt', 'gemini', 'python', 'nlp'],
+    'machine learning': ['ai', 'artificial intelligence', 'python', 'tensorflow', 'pytorch'],
+    'ece': ['embedded', 'microcontroller', 'arduino', 'esp32', 'circuit', 'vlsi', 'signal processing', 'sensors', 'hardware', 'c++', 'c'],
+    'embedded': ['ece', 'microcontroller', 'arduino', 'esp32', 'sensors', 'hardware', 'c++', 'c'],
+    'iot': ['sensors', 'esp32', 'mqtt', 'hardware', 'ece', 'embedded', 'wireless'],
+    'web': ['react', 'node', 'javascript', 'fastapi', 'frontend', 'backend', 'fullstack']
+  },
+
+  // Tokenize & normalize text into clean terms (filtering stopwords & expanding synonyms)
   tokenize(text) {
     if (!text) return [];
     const stopwords = new Set([
@@ -17,11 +27,21 @@ const MLPredictor = {
       'same', 'so', 'than', 'too', 'very', 'can', 'just', 'should', 'now', 'or'
     ]);
 
-    return text
+    const baseTokens = text
       .toLowerCase()
       .replace(/[^a-z0-9+#\s-]/g, ' ')
       .split(/\s+/)
       .filter(term => term.length > 1 && !stopwords.has(term));
+
+    // Expand semantic concepts
+    const expanded = [...baseTokens];
+    baseTokens.forEach(t => {
+      if (this.conceptSynonyms[t]) {
+        expanded.push(...this.conceptSynonyms[t]);
+      }
+    });
+
+    return expanded;
   },
 
   // Calculate Term Frequency (TF) vector for a document
@@ -35,6 +55,30 @@ const MLPredictor = {
       tf[token] = tf[token] / total;
     });
     return tf;
+  },
+
+  // Retrieve user online learning feedback weights from localStorage
+  getFeedbackWeights() {
+    if (typeof localStorage === 'undefined') return {};
+    const data = localStorage.getItem('hacksync_learning_weights');
+    if (!data) return {};
+    try { return JSON.parse(data); } catch (e) { return {}; }
+  },
+
+  // Record user action (applied, bookmarked, skipped) to adapt ML weights online
+  recordFeedback(hackathon, action) {
+    if (typeof localStorage === 'undefined' || !hackathon) return;
+    const weights = this.getFeedbackWeights();
+    const tokens = this.tokenize(hackathon.title + ' ' + (hackathon.skills || []).join(' '));
+    
+    // Action weight deltas: 'applied' (+1.5), 'bookmarked' (+1.0), 'skipped' (-0.5)
+    const delta = action === 'applied' ? 1.5 : (action === 'bookmarked' ? 1.0 : -0.5);
+    
+    tokens.forEach(token => {
+      weights[token] = Math.max(-2, Math.min(5, (weights[token] || 0) + delta));
+    });
+
+    localStorage.setItem('hacksync_learning_weights', JSON.stringify(weights));
   },
 
   // Predict ML Match Score and Generate Feature Insights
@@ -108,7 +152,16 @@ const MLPredictor = {
       matchScore += boost;
     }
 
-    matchScore = Math.min(98, Math.max(48, matchScore));
+    // Apply Online Feedback Loop Weights
+    const feedbackWeights = this.getFeedbackWeights();
+    let feedbackBoost = 0;
+    hackTokens.forEach(t => {
+      if (feedbackWeights[t]) {
+        feedbackBoost += feedbackWeights[t] * 2.5;
+      }
+    });
+
+    matchScore = Math.min(98, Math.max(45, Math.round(matchScore + feedbackBoost)));
 
     // Calculate Deadline Urgency Score (0-100)
     let urgencyScore = 50;
@@ -130,7 +183,6 @@ const MLPredictor = {
         urgencyScore = 45;
       }
     } else {
-      // Parse deadline on the fly if deadlineInfo not pre-attached
       const dInfo = (typeof window !== 'undefined' && window.MatcherModule) ? window.MatcherModule.getDeadlineInfo(hackathon.deadline) : { expired: false, diffDays: 5 };
       urgencyScore = dInfo.expired ? 0 : Math.max(20, 100 - (dInfo.diffDays * 5));
     }
@@ -146,7 +198,7 @@ const MLPredictor = {
 
     const topMatches = Array.from(new Set([...directSkillMatches, ...matchedTokens])).slice(0, 4);
     const explanation = topMatches.length > 0
-      ? `ML Model detected feature alignment in: ${topMatches.join(', ')}.`
+      ? `ML Model & Learning Engine detected alignment in: ${topMatches.join(', ')}.`
       : 'Algorithmic alignment based on domain relevance and project stack.';
 
     return {
