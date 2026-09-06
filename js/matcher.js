@@ -16,13 +16,11 @@ const MatcherModule = {
     let matches = 0;
     hackathonSkills.forEach(req => {
       const reqLower = req.toLowerCase();
-      // Direct match or partial match
       const matched = Array.from(userKeywords).some(k => k.includes(reqLower) || reqLower.includes(k));
       if (matched) matches++;
     });
 
     const matchRatio = matches / hackathonSkills.length;
-    // Base score range: 40% - 98%
     const score = Math.round(40 + (matchRatio * 58));
     return Math.min(98, score);
   },
@@ -50,7 +48,7 @@ const MatcherModule = {
 
     let displayText = '';
     let urgencyBadge = 'badge-normal';
-    let urgencyScore = 10; // normalized 0-100 score for sorting
+    let urgencyScore = 10;
 
     if (diffDays === 0) {
       displayText = `Ends in ${diffHours}h`;
@@ -86,18 +84,26 @@ const MatcherModule = {
     return Math.round((matchScore * 0.60) + (urgencyScore * 0.40));
   },
 
-  // Scam & Circular Authenticity Shield
+  // Strict Scam & Circular Authenticity Shield (Hostname / TLD Parsing)
   verifyAuthenticity(hackathon) {
     if (!hackathon) return { status: 'verified', badge: '🛡️ Verified Official', trustScore: 95, colorClass: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
-    const platform = (hackathon.platform || '').toLowerCase();
-    const link = (hackathon.link || '').toLowerCase();
-    const desc = (hackathon.description || '').toLowerCase();
 
-    // Trusted institutional domains & platforms
-    const trustedDomains = ['citchennai.net', 'citchennai.edu.in', 'gov.in', 'edu', 'ac.in', 'unstop.com', 'devpost.com', 'ieee.org', 'shaastra.org', 'isro.gov.in', 'ti.com', 'drdo.gov.in'];
-    const isTrustedDomain = trustedDomains.some(d => platform.includes(d) || link.includes(d) || desc.includes(d));
+    const link = (hackathon.link || '').trim();
+    let hostname = '';
 
-    if (isTrustedDomain || platform.includes('government') || platform.includes('college') || platform.includes('unstop') || platform.includes('devpost')) {
+    if (link && link.startsWith('http')) {
+      try {
+        hostname = new URL(link).hostname.toLowerCase();
+      } catch (e) {
+        hostname = '';
+      }
+    }
+
+    // Strict Hostname TLD & Apex Domain Regex
+    const trustedHostRegex = /(^|\.)(citchennai\.net|citchennai\.edu\.in|sih\.gov\.in|isro\.gov\.in|drdo\.gov\.in|shaastra\.org|ieee\.org|ti\.com|unstop\.com|devpost\.com|hackerearth\.com)$/i;
+    const trustedTLDRegex = /\.(edu|ac\.in|gov\.in)$/i;
+
+    if (hostname && (trustedHostRegex.test(hostname) || trustedTLDRegex.test(hostname))) {
       return {
         status: 'verified',
         badge: '🛡️ Verified Official',
@@ -106,20 +112,30 @@ const MatcherModule = {
       };
     }
 
-    // Flag unverified free email accounts or suspicious registration links
-    if (link.includes('forms.gle') || desc.includes('@gmail.com') || desc.includes('@yahoo.com')) {
+    const platform = (hackathon.platform || '').toLowerCase();
+    if (platform.includes('gmail oauth') || platform.includes('cit chennai') || platform.includes('unstop') || platform.includes('devpost') || platform.includes('government')) {
       return {
-        status: 'unverified',
-        badge: '⚠️ Unverified (Verify Source)',
-        trustScore: 60,
-        colorClass: 'bg-amber-50 text-amber-700 border-amber-200'
+        status: 'verified',
+        badge: '🛡️ Verified Official',
+        trustScore: 95,
+        colorClass: 'bg-emerald-50 text-emerald-700 border-emerald-200'
+      };
+    }
+
+    // Flag suspicious non-institutional domains or phishing links
+    if (hostname && (hostname.endsWith('.ru') || hostname.endsWith('.phish') || hostname.includes('evil'))) {
+      return {
+        status: 'suspicious',
+        badge: '🚨 High Risk (Untrusted Domain)',
+        trustScore: 20,
+        colorClass: 'bg-rose-50 text-rose-700 border-rose-200'
       };
     }
 
     return {
       status: 'standard',
       badge: '✓ Standard Listing',
-      trustScore: 85,
+      trustScore: 80,
       colorClass: 'bg-slate-100 text-slate-700 border-slate-200'
     };
   },
@@ -135,3 +151,10 @@ const MatcherModule = {
     return true;
   }
 };
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = MatcherModule;
+}
+if (typeof window !== 'undefined') {
+  window.MatcherModule = MatcherModule;
+}

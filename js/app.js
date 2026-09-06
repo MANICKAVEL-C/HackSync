@@ -217,6 +217,16 @@ const app = {
     if (window.lucide) lucide.createIcons();
   },
 
+  escapeHTML(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  },
+
   renderOrganizedDataTable(items) {
     return `
       <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
@@ -239,6 +249,12 @@ const app = {
                 const matchBadge = mlScore >= 80 ? 'bg-emerald-600 text-white font-black' : (mlScore >= 65 ? 'bg-ocean-600 text-white font-black' : 'bg-slate-700 text-white font-bold');
                 const auth = MatcherModule.verifyAuthenticity ? MatcherModule.verifyAuthenticity(h) : { badge: 'Verified', colorClass: 'bg-slate-100 text-slate-700 border-slate-200' };
 
+                const safeTitle = this.escapeHTML(h.title);
+                const safePlatform = this.escapeHTML(h.platform);
+                const safePrize = this.escapeHTML(h.prize || 'Rewards');
+                const safeExplanation = this.escapeHTML(h.mlResult.explanation);
+                const safeLink = this.escapeHTML(h.link);
+
                 return `
                   <tr class="hover:bg-slate-50/80 transition-colors">
                     <td class="p-3.5">
@@ -249,13 +265,13 @@ const app = {
                     </td>
                     <td class="p-3.5">
                       <div onclick="app.openDetailModal('${h.id}')" class="font-extrabold text-slate-900 text-sm hover:text-ocean-600 cursor-pointer line-clamp-1">
-                        ${h.title}
+                        ${safeTitle}
                       </div>
-                      <div class="text-[11px] text-slate-500 line-clamp-1 mt-0.5">${h.mlResult.explanation}</div>
+                      <div class="text-[11px] text-slate-500 line-clamp-1 mt-0.5">${safeExplanation}</div>
                     </td>
                     <td class="p-3.5">
                       <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 border border-slate-200 text-slate-700 inline-block line-clamp-1">
-                        ${h.platform}
+                        ${safePlatform}
                       </span>
                       <div class="mt-1">
                         <span class="px-2 py-0.5 rounded text-[10px] font-bold border ${auth.colorClass}">
@@ -271,15 +287,15 @@ const app = {
                     <td class="p-3.5">
                       <div class="flex flex-wrap gap-1">
                         ${(h.skills || []).slice(0, 3).map(s => `
-                          <span class="text-[10px] px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-semibold border border-slate-200">${s}</span>
+                          <span class="text-[10px] px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-semibold border border-slate-200">${this.escapeHTML(s)}</span>
                         `).join('')}
                       </div>
                     </td>
                     <td class="p-3.5 font-bold text-sun-600">
-                      ${h.prize || 'Rewards'}
+                      ${safePrize}
                     </td>
                     <td class="p-3.5 text-right space-x-1">
-                      <a href="${h.link}" target="_blank" onclick="app.handleActionClick('${h.id}', 'applied')" class="px-3 py-1 rounded-lg bg-ocean-600 hover:bg-ocean-700 text-white font-bold text-xs inline-flex items-center gap-1">
+                      <a href="${safeLink}" target="_blank" onclick="app.handleActionClick('${h.id}', 'applied')" class="px-3 py-1 rounded-lg bg-ocean-600 hover:bg-ocean-700 text-white font-bold text-xs inline-flex items-center gap-1">
                         Apply <i data-lucide="external-link" class="w-3 h-3"></i>
                       </a>
                     </td>
